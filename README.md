@@ -18,3 +18,31 @@ This function checks the structure of the Net2 variable. Either returns a report
 Mismatches may be of sorts like "there are six subclasses, but the refractory period is defined only for five", or "there is a plasticity within synapses of non-existant pair of subclasses". 
 The mutation routine is streamlined so that the mutation of a legal "genotype" is always legal, so there is no point to check legality during the evolution loop. It is, however, checked at the beginning (although all the circuits from the thesis are legal and can be used with no hesitation).
 However, if one manually designes or alters a Net2 variable, the legality check is highly advised: I myself usually fail to design a legal Net2 from the first attempt. 
+
+The functions of the main evo loop:
+
+mutation_routine.m
+[NewNet2{C}, Transition_tracker{C}]=mutation_routine(Primogen{C},Point_Mut,struct_mut,Mut_seed(C));
+Applies mutations to the Net2 "genotypes" in order described in the thesis, with probability and magnitude parameters described in Point_Mut and struct_mut. Optionally uses RNG seed for reproducibility, or can take NaN in other context fo just a random set of mutations. 
+Returns a new, mutated Net2, and a record of structural mutations Transition_tracker (to follow the legacies of the neuronal subclasses etc, as they can change indices during the evolution).
+
+Protocol{C}=Protocol_maker_....m
+Explained above
+
+unfold_v2.m
+[MyInst{C},Runtime{C},tech{C}]=unfold_v2(NewNet2{C},PSP_db,Plast_db,Unfold_seed(C));
+The second major revision (hence "v2") of the unfolding function. Takes Net2 and pre-generated temporal kernels for PSP, modulation and plasticity, and returns a fully-defined (neuron-to-neuron) circuit. Addtitionally, a Runtime (for tracking within-simulation dynamic parameters) and tech, for purely technical settings.
+
+simulate_instance.m
+[Raster{C}, input_markdown, extras]=simulate_instance(MyInst{C},NaN,Runtime{C},tech{C},dur(C),Sim_seed(C),Input{C},[]);
+The function performs the circuits activity simulation, using the circuit, the input from the I-O sequence, and technical parameters. Can take a pre-generated Raster as a second input (for example, for silencing of one of the subclasses), if NaN - generates Raster de novo.
+input_markdown and extras are not used at this point, they were made in preparation for more interactive I-O schemes, when a simple pre-defined I-O sequence is impossibe (such as a dynamically changing environment). It was not done yet, so the variables are rudimentary.
+
+make_desired_output.m
+[Desired_output{C}, weights{C}]=make_desired_output(Protocol{C},tech{C});
+Extracts desired output from the I-O sequence. Weights is the variable that marks the "important" part of the activity (the gray-shaded areas on the rasters, where the output patterns are cheched)
+
+extract_real_output.m
+Real_output{C}=extract_real_output(Raster{C},MyInst{C});
+Just gets real output activity from the raster. Uses the circuit structure to detect the output neurons (Raster itself does not contain information on types and subclasses)
+
