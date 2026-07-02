@@ -1,0 +1,133 @@
+%%%%%%%%%%%%%%%%% genetic code generation %%%%%%%%%%%%%%%%%%
+
+% All the genetic parameters will be stored in the Net2 variable, which is
+% the main product of the routine
+
+
+
+
+
+% The composition of the circuit
+Net2.Cells.Input=[[1 1 1];[0 0 0]]; % SD has to be zero for the reserved classes
+Net2.Cells.Output=[[1];[0]]; % SD has to be zero for the reserved classes
+Net2.Cells.Ion=[[15 10];[2 1]]; % The upper row - means, the lower row - sigmas 
+Net2.Cells.Mod=[[3 3];[2 1]];
+
+n_subclasses=size(Net2.Cells.Input,2)+size(Net2.Cells.Output,2)+size(Net2.Cells.Ion,2)+size(Net2.Cells.Mod,2);
+n_nonmod=size(Net2.Cells.Input,2)+size(Net2.Cells.Output,2)+size(Net2.Cells.Ion,2);
+% The number of connections between the classes, postsynapses in rows, pretsynapses in columns, order: [input output ion mod]
+
+Net2.Connections(:,:,1)=[[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[1 1 1 1 2 3];[1 1 1 2 3 5];[1 1 1 1 2 3];[1 1 1 1 2 1.5];[1 1 1 1 2 1]]; % Mean
+Net2.Connections(:,:,2)=[[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 2 1];[0 0 1 2 1 1];[0 0 0 0 5 1];[0 0 0 0 0 1];[0 0 0 0 0 0]]; % sigma of the input
+Net2.Connections(:,:,3)=[[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 1 0];[0 0 0 1 1 1];[0 0 0 0 1 2];[0 0 0 0 0 2];[0 0 0 0 0 1]]; % sigma of the output
+% Net2.Connections(:,:,2)=[[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0]]; % sigma of the input
+% Net2.Connections(:,:,3)=[[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0]]; % sigma of the output
+
+Net2.Connections_Mod(1:8,1:6,1:2,1)=3; % Mean  (post of target, pre of target, modulation source, mean number)
+Net2.Connections_Mod(1:8,1:6,1:2,2)=1; % sigma of the input
+Net2.Connections_Mod(1:8,1:6,1:2,3)=1; % sigma of the output
+
+
+% The Basic Powers values for the modulatory effect must have a special format similar to the plasticity single trigger effect 
+Net2.BasicPowers(:,:,1)=[[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[1 1 1 1 1 -1];[3 3 3 1 1 -1];[1 1 1 1 2 -1];[1 1 1 1 5 -1];[1 1 1 1 1 -1]]; % Mean
+Net2.BasicPowers(:,:,2)=[[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0.1 1];[0 0 0 0 0.2 0];[0 0 0 0 0 0]]; % sigma
+
+% The Delays for the modulatory effect potentially could be stored in the same format at the Connections, but it is easier to store them as the delay of the effect itself (similar to the plasticity)
+Net2.Delays(:,:,1)=[[2 2 2 2 2 2];[2 2 2 2 2 2];[2 2 2 2 2 2];[2 2 2 2 2 2];[2 2 2 2 2 2];[2 2 2 2 2 2];[2 2 2 2 2 2];[2 2 2 2 2 2]]; % Mean
+Net2.Delays(:,:,2)=[[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 1 1];[0 0 0 0 0.5 0];[0 0 0 0 0.1 0];[0 0 0 0 0 0]]; % sigma
+%Net2.Delays(:,:,2)=[[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0];[0 0 0 0 0 0]]; % sigma
+
+for post=1:n_subclasses
+    for pre=1:n_nonmod % The PSP is nonapplicable for the modulatore "presynapse"
+        Net2.PSPshape{post,pre}=[[2 2 4];[0 0 0]]; % A template for the PSP shape, same for all synapses at this point. The second row is sigma
+    end
+end
+Net2.PSPshape{3,4}=[[1 1 3];[0 0.1 1]]; % Couple of deviating PSP shapes to control the flow. 
+Net2.PSPshape{5,1}=[[3 3 5];[1 1 1]];
+
+% The parameters of the neurons themselves are applicable for the
+% modulation
+Net2.Thresholds=[[0 0 0 0 1 1 1 0];[0 0 0 0 0 0 0 0]]; % second row is sigma
+Net2.AbsRefract=[[0 0 0 0 5 1 1 0];[0 0 0 0 1 0.2 0 0]]; % second row is sigma
+Net2.RecurCon=[[0 0 0 0.1 -0.5 0 0 0];[0 0 0 0 0 0 0 0]]; % An individual recurrent connection affinity. Value [-1 1]. [0 1] = p(switch 0 individual recurrent connection to 1 if 0). [-1 0] = -p(switch 1 individual recurrent connection to 0). Inapplicable for modulatory neurons 
+Net2.ThreshNoise=[[0 0 0 0.1 1 0.1 0.1 1];[0 0 0 0.1 0.1 0.1 0 0]]; % A temporal sigma of the gaussian noise of the activation threshold (the mean of the noise is always zero, the steady alternation of threshold is in Net2.Thresholds)
+
+modpattern1={[0.4;0.1],[10;1],[[5 2 5 15];[1 0 1 1]]}; % A template just for tests. First - effect of a single trigger, second - max number of triggers, third - [delay, in, plateau, out] all with sigmas
+modpattern2={[-0.2;0.1],[10;1],[[5 2 5 15];[1 0 1 1]]};
+
+for post=1:n_subclasses
+    for pre=1:n_nonmod 
+        Net2.Mod{post,pre,1}=modpattern1;
+        Net2.Mod{post,pre,2}=modpattern2;
+    end
+end
+
+
+% The patterns and the coordinate system
+% Code: each expression pattern refers to a subclass of neurons (a scalar
+% in the first cell). Enumeration of the subclasses: [In Out Ion Mod]
+% Other elements in the cells array (consisting of two vectors) contain the
+% coordinate of the parameter (first vector) and the coefficients (second
+% parameter).
+% Coordinates:
+% Class-specific targets
+% [0 x] - The number of neurons of the class x (mostly applicable to the
+% multiple instances case); TO BE ADDED LATER
+
+% Neuron-specific targets
+% [1 1 y] - Post_connection_pattern from the class y
+% [1 2 y] - Pre_connection_pattern to the class y
+% [1 3 y] - Post_affinity_pattern  from the class y
+% [1 4 y] - Pre_affinity_pattern to the class y
+% [4] - Thresholds pattern 
+% [5] - AbsRefract pattern 
+% [10] - RecurCon pattern
+% [11] - ThreshNoise pattern
+
+% Synapse-specific targets
+% [2 1 y] - Basic_Powers pattern from the class y
+% [2 2 y] - Basic_Powers pattern to the class y
+% [3 1 y] - Delay pattern from the class y
+% [3 2 y] - Delay pattern to the class y 
+% [6 1 1/2 t] - For the plasticity pattern with ID t, a single act maximal effect. Third place: 1 for postsynaptic, 2 for presynaptic
+% [6 2 1/2 t] - For the plasticity pattern with ID t, Maximal simultaneous actions. Third place: 1 for postsynaptic, 2 for presynaptic
+% [6 3 1/2 t] - For the plasticity pattern with ID t, a delay. Third place: 1 for postsynaptic, 2 for presynaptic
+% [6 4 1/2 t] - For the plasticity pattern with ID t, an onset duration. Third place: 1 for postsynaptic, 2 for presynaptic
+% [6 5 1/2 t] - For the plasticity pattern with ID t, a plateau duration. Third place: 1 for postsynaptic, 2 for presynaptic
+% [6 6 1/2 t] - For the plasticity pattern with ID t, an offset duration. Third place: 1 for postsynaptic, 2 for presynaptic
+% [6 7 1/2 t] - For the plasticity pattern with ID t, a triggering condition frame beginning. Third place: 1 for postsynaptic, 2 for presynaptic
+% [6 8 1/2 t] - For the plasticity pattern with ID t, a triggering condition frame end. Third place: 1 for postsynaptic, 2 for presynaptic
+% [7 1 y] - For the PSP from the class y, an onset duration. 
+% [7 2 y] - For the PSP from the class y, a plateau duration. 
+% [7 3 y] - For the PSP from the class y, an offset duration. 
+
+% Modulation targets 
+% Modulation can be affected by the genes of all three participants: post, pre_ion and pre_mod
+% [8 1 x y z] - Post_connection_pattern for modulation of the synapse x<-y and the modulatory input z 
+% [8 2 x y z] - Pre_connection_pattern for modulation of the synapse x<-y and the modulatory input z 
+% [8 3 x y z] - Post_affinity_pattern for modulation of the synapse x<-y and the modulatory input z 
+% [8 4 x y z] - Pre_affinity_pattern for modulation of the synapse x<-y and the modulatory input z 
+% [9 1 x y 1/2] - A singular modulaton effect. The fifth place: 1 - postsynapse (any subclass, either x or y, modulatory y is forbidden), 2 presynapse (mod). All for synapse x<-y
+% [9 2 x y 1/2] - Max number of triggers. The fifth place: 1 - postsynapse (any subclass, either x or y, modulatory y is forbidden), 2 presynapse (mod)
+% [9 3 x y 1/2] - Delay. The fifth place: 1 - postsynapse (any subclass, either x or y, modulatory y is forbidden), 2 presynapse (mod)
+% [9 4 x y 1/2] - Onset duration. The fifth place: 1 - postsynapse (any subclass, either x or y, modulatory y is forbidden), 2 presynapse (mod)
+% [9 5 x y 1/2] - Plateau duration. The fifth place: 1 - postsynapse (any subclass, either x or y, modulatory y is forbidden), 2 presynapse (mod)
+% [9 6 x y 1/2] - Offset duration. The fifth place: 1 - postsynapse (any subclass, either x or y, modulatory y is forbidden), 2 presynapse (mod)
+% 
+% Net2.Expression_patterns{1}={[5],{[1 1 5],[0 1 3]},{[1 2 6],[1 1 0]},{[2 2 6],[1 1 1]},{[2 1 6],[1 2 3]}};
+% Net2.Expression_patterns{2}={[5],{[1 1 5],[0 1 2]},{[3 1 5],[3 -1 -2]},{[3 2 5],[3 -1 -2]},{[2 2 5],[3 -1 -2]}};
+% Net2.Expression_patterns{3}={[6],{[2 2 6],[0 1 -3]},{[9 1 6 6 7 1],[1 5 5]},{[8 1 6 5 8],[3 1 1]}};
+% Net2.Expression_patterns{4}={[4],{[3 1 3],[0 0 -10]},{[2 1 3],[0 5 0]},{[6 2 1 4],[1 2 3]}};
+% Net2.Expression_patterns{5}={[4],{[6 1 1 4],[0 2 3]},{[6 3 1 4],[1 4 8]}}; % The pattern to test the plasticity routine (postsynaptic)
+% Net2.Expression_patterns{6}={[4],{[6 1 2 6],[1 2 0]},{[2 2 4],[0 0 -10]},{[6 4 1 4],[1 4 8]}}; % The pattern to test the plasticity routine (presynaptic)
+% Net2.Expression_patterns{7}={[7],{[9 1 6 6 7 2],[1 10 10]},{[9 2 8 6 7 2],[1 10 10]},{[8 2 8 6 7],[0 0 -10]},{[9 1 7 5 7 1],[3 3 3]}}; % To test the modulation
+% 
+% 
+% %The plasticity pattern for the synapse is legal only if the presynaptic neuron is non-modulatory
+% Net2.Plasticity{1}={1,[NaN],[5 6],{[-0.3;0.1],[10;1],[[0 1 10 5];[0 0 2 1]]}}; % The coordinate in the outer cell array is the pattern's ID (immutable, reassignment is possible if the pattern in eliminated by mutation)
+% Net2.Plasticity{2}={1000,[NaN],[6],{[0.4;0.1],[10;1],[[2 3 20 10];[0 0 2 1]]}};
+% Net2.Plasticity{3}={2,[3 30;1 1],[6 5],{[0.4;0.1],[10;1],[[2 2 2 15];[1 0 2 1]]}};
+% Net2.Plasticity{4}={3,[3 6;1 1],[6 6],{[0.4;0.1],[10;1],[[2 2 2 15];[1 0 2 1]]}};
+% Net2.Plasticity{5}={3,[3 6;1 1],[8 5],{[0.4;0.1],[10;1],[[2 2 2 15];[1 0 2 1]]}};
+% Net2.Plasticity{6}={2,[3 6;1 1],[6 6],{[0.4;0.1],[10;1],[[2 2 2 15];[1 0 2 1]]}};
+% Net2.Plasticity{7}={1000,[NaN],[6],{[0.4;0.1],[10;1],[[2 3 20 10];[0 0 2 1]]}};
